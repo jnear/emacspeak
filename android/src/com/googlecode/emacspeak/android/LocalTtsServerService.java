@@ -139,13 +139,24 @@ public class LocalTtsServerService extends Service {
         // TODO: Account for queued audio and silences
         // tvr:We should  queue to the TTSlayer, not
         // concatenate which will GC
+
+        // first stop speech
+        mTts.speak("", 2, null);
+
+        // then start queuing from the mQueue
         String message = "";
         while (mQueue.size() > 0) {
+          // check if the next chunk will go over the maximum speech input length
+          if (message.length() + mQueue.get(0).payload.length() >= mTts.getMaxSpeechInputLength()) {
+            // if so, queue up the previous chunks and reset
+            mTts.speak(message, 1, null);
+            message = "";
+          }
           message = message + mQueue.remove(0).payload + "\n";
         }
-        if (message.length() > 0) {
-          mTts.speak(message, 2, null);
-        }
+
+        // speak the last set of chunks
+        mTts.speak(message, 1, null);
       }
     } catch (PackageManager.NameNotFoundException e) {
       e.printStackTrace();

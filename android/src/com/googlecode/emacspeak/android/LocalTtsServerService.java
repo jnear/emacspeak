@@ -82,6 +82,7 @@ public class LocalTtsServerService extends Service {
     // bumped by the system.
     // tvr:shouldn't need this any more?
     this.startForeground(0, null);
+    mQueue = new ArrayList<Utterance>();
     mTts = new TextToSpeech(this, new OnInitListener() {
       @Override
       public void onInit(int arg0) {
@@ -127,14 +128,24 @@ public class LocalTtsServerService extends Service {
         mTts.speak(command, 2, null);
       } else if (command.startsWith("s")) {
         mTts.speak("", 2, null);
+        mQueue = new ArrayList<Utterance>();
       }else if (command.startsWith("c ")) {
         command = command.replaceFirst("c ", "");
-        mTts.speak(command, 1, null);
+        mQueue.add(new Utterance(Utterance.TYPE_SPEECH, command));
       } else if (command.startsWith("q ")) {
         command = command.replaceFirst("q ", "");
-        mTts.speak(command, 1, null);
+        mQueue.add(new Utterance(Utterance.TYPE_SPEECH, command));
       } else if (command.startsWith("d")) {
-        // without the message queue, nothing to do here
+        // TODO: Account for queued audio and silences
+        // tvr:We should  queue to the TTSlayer, not
+        // concatenate which will GC
+        String message = "";
+        while (mQueue.size() > 0) {
+          message = message + mQueue.remove(0).payload + "\n";
+        }
+        if (message.length() > 0) {
+          mTts.speak(message, 2, null);
+        }
       }
     } catch (PackageManager.NameNotFoundException e) {
       e.printStackTrace();

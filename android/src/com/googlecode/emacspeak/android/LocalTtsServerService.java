@@ -139,10 +139,7 @@ public class LocalTtsServerService extends Service {
         // TODO: Account for queued audio and silences
         // tvr:We should  queue to the TTSlayer, not
         // concatenate which will GC
-
-        // first stop speech
-        mTts.speak("", 2, null);
-
+        
         // then start queuing from the mQueue
         String message = "";
         while (mQueue.size() > 0) {

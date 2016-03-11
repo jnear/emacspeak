@@ -57,6 +57,7 @@ public class LocalTtsServerService extends Service {
   }
 
   private static final int PORT = 8383;
+  private static final float SPEECH_RATE = 4;
 
   private ServerSocket mServerSocket;
   private Socket mSocket;
@@ -86,6 +87,7 @@ public class LocalTtsServerService extends Service {
     mTts = new TextToSpeech(this, new OnInitListener() {
       @Override
       public void onInit(int arg0) {
+        mTts.setSpeechRate(SPEECH_RATE);
         mTts.speak("Speech server ready.", 0, null);
       }
     });
@@ -99,6 +101,7 @@ public class LocalTtsServerService extends Service {
     public void run() {
       try {
         mServerSocket = new ServerSocket(PORT);
+        Log.e("server", "server socket created");
         mSocket = mServerSocket.accept();
         Log.e("server", "server connected");
         mInputStream = mSocket.getInputStream();
@@ -116,7 +119,8 @@ public class LocalTtsServerService extends Service {
   private void processData(String command) {
     try {
       Log.d("server", "command: " + command);
-      
+      command = command.replaceAll("\\{", "").replaceAll("\\}", "");
+
       if (command.startsWith("version")) {
         PackageInfo pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
         mTts.speak(pinfo.versionName, 2, null);
@@ -139,12 +143,14 @@ public class LocalTtsServerService extends Service {
         // TODO: Account for queued audio and silences
         // tvr:We should  queue to the TTSlayer, not
         // concatenate which will GC
-        
+
         // then start queuing from the mQueue
         String message = "";
         while (mQueue.size() > 0) {
           // check if the next chunk will go over the maximum speech input length
-          if (message.length() + mQueue.get(0).payload.length() >= mTts.getMaxSpeechInputLength()) {
+          //int maxLength = mTts.getMaxSpeechInputLength();
+          int maxLength = 1000;
+          if (message.length() + mQueue.get(0).payload.length() >= maxLength) {
             // if so, queue up the previous chunks and reset
             mTts.speak(message, 1, null);
             message = "";
